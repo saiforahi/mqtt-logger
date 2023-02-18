@@ -1,11 +1,13 @@
 import json
 import os
+import time
 
 
 class FileMaster():
-    def __init__(self,reading_file_name:str=None,logging_file_name:str=None):
-        self.reading_file_name = reading_file_name+".dat" if reading_file_name else "reading.dat"
-        self.logging_file_name = logging_file_name+".dat" if logging_file_name else "log.dat"
+    def __init__(self,reading_file_name:str=None,logging_file_name:str=None,file_size:int=None):
+        self.reading_file_name = reading_file_name+".dat" if reading_file_name else "reading_"+str(int(time.time()))+".dat"
+        self.logging_file_name = logging_file_name+".dat" if logging_file_name else "log_"+str(int(time.time()))+".dat"
+        self.file_size = file_size if logging_file_name else 100  # file size in mb
 
     def set_reading_file(self,new_reading_file_name:str)->bool:
         try:
@@ -57,11 +59,15 @@ class FileMaster():
                     file.close()
                     print("File "+self.reading_file_name+" has been written")
             else:
-                with open("readings/"+self.reading_file_name,"a") as existing_log_file:
+                file_stats = os.stat("readings/" + self.reading_file_name)
+                file_size = file_stats.st_size / (1024 * 1024)
+
+                with open("readings/"+self.reading_file_name,"a" if file_size <= self.file_size else "w") as existing_log_file:
                     for item in file_content:
                         existing_log_file.write(json.dumps(item)+"\n")
                     existing_log_file.close()
                     print("File " + self.reading_file_name + " has been updated")
+
 
             pass
         except Exception as e:
