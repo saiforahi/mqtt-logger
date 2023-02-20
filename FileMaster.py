@@ -6,51 +6,54 @@ import glob
 
 
 class FileMaster():
-    log_base_path="logs/"
-    def __init__(self,device_id:str,file_size:int=None):
-        self.device_id= device_id
+    log_base_path="logs/" # log dir base relative path
+    def __init__(self,device_id:str,file_size:int=None): # FileMaster class constructor
+        self.device_id= device_id # IOT device ID
         self.file_size = file_size if file_size else 100  # file size in mb
 
-    def set_reading_file(self,new_reading_file_name:str)->bool:
+    def set_device_id(self,new_device_id:str)->bool: # device ID setter function
         try:
-            self.reading_file_name=new_reading_file_name
+            self.device_id=new_device_id # setting new device ID
             return True
         except Exception as e:
             print("set reading file name error",str(e))
             return False
 
-    def get_file(self):
+    def get_device_id(self)->str: # device ID getter function which returns string type
         try:
+            return self.device_id
             pass
         except Exception as e:
             print(str(e))
             pass
 
     # function for writing log file
-    def write_log_file(self, file_content:str=None) -> None:
+    def write_log_file(self, file_content:str=None) -> None: # log file writer function
         try:
             # checking if log directory exists or not
             if not os.path.isdir(self.log_base_path+self.device_id):
                 os.makedirs(self.log_base_path+self.device_id)
-
+            # listing all files in device log sub-directory
             list_of_files = glob.glob(self.log_base_path+self.device_id+'/*.dat', recursive=True)
 
             if len(list_of_files)<=0:
+                # writing new file in the case of no previous log
+                # generating file name with relative path
                 path=self.log_base_path+self.device_id+"/"+self.device_id+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".dat"
-                print(type(path))
                 with open(path, "w") as file:
-                    file.write(file_content+"\n")
-                    file.close()
+                    file.write(file_content+"\n") # write line to file
+                    file.close() # file closes
             else:
+                #checking last log file size before appending or writing new one
                 latest_file = max(list_of_files, key=os.path.getctime)
-                file_stats = os.stat(latest_file)
-                file_size = file_stats.st_size / (1024 * 1024)
-                print(latest_file)
+                file_size = os.stat(latest_file).st_size / (1024 * 1024) # latest log file size in MB
                 if file_size <= self.file_size:
+                    # appending to last log file
                     with open(latest_file, "a") as file:
                         file.write(file_content+"\n")
                         file.close()
                 else:
+                    # writing to new log file in the case of exceeding file size limit
                     path = self.log_base_path + self.device_id + "/" + self.device_id + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".dat"
                     with open(path, "w") as file:
                         file.write(file_content + "\n")
@@ -93,9 +96,10 @@ class FileMaster():
             print(str(e))
             pass
 
-    def read_reading_file(self,device_id=None):
+    # log files getter function
+    def read_log_files(self,device_id=None):
         try:
-            entries = os.scandir('readings/')
+            entries = os.scandir(self.log_base_path)
             for entry in entries:
                 print(entry.name)
             pass
