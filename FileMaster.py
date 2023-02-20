@@ -1,13 +1,15 @@
+import datetime
 import json
 import os
-import time
+import sys
+import glob
 
 
 class FileMaster():
-    def __init__(self,reading_file_name:str=None,logging_file_name:str=None,file_size:int=None):
-        self.reading_file_name = reading_file_name+".dat" if reading_file_name else "reading_"+str(int(time.time()))+".dat"
-        self.logging_file_name = logging_file_name+".dat" if logging_file_name else "log_"+str(int(time.time()))+".dat"
-        self.file_size = file_size if logging_file_name else 100  # file size in mb
+    log_base_path="logs/"
+    def __init__(self,device_id:str,file_size:int=None):
+        self.device_id= device_id
+        self.file_size = file_size if file_size else 100  # file size in mb
 
     def set_reading_file(self,new_reading_file_name:str)->bool:
         try:
@@ -25,22 +27,39 @@ class FileMaster():
             pass
 
     # function for writing log file
-    def write_log_file(self, file_content=None) -> None:
+    def write_log_file(self, file_content:str=None) -> None:
         try:
             # checking if log directory exists or not
-            if not os.path.exists("log/"+self.logging_file_name):
-                # creating log file
-                with open("log/"+self.logging_file_name, "w") as file:
-                    file.write(file_content)
+            if not os.path.isdir(self.log_base_path+self.device_id):
+                os.makedirs(self.log_base_path+self.device_id)
+
+            list_of_files = glob.glob(self.log_base_path+self.device_id+'/*.dat', recursive=True)
+
+            if len(list_of_files)<=0:
+                path=self.log_base_path+self.device_id+"/"+self.device_id+"_"+datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")+".dat"
+                print(type(path))
+                with open(path, "w") as file:
+                    file.write(file_content+"\n")
                     file.close()
             else:
-                # appending data to existing log file
-                with open("log/"+self.logging_file_name,"a") as existing_log_file:
-                    existing_log_file.writelines()
+                latest_file = max(list_of_files, key=os.path.getctime)
+                file_stats = os.stat(latest_file)
+                file_size = file_stats.st_size / (1024 * 1024)
+                print(latest_file)
+                if file_size <= self.file_size:
+                    with open(latest_file, "a") as file:
+                        file.write(file_content+"\n")
+                        file.close()
+                else:
+                    path = self.log_base_path + self.device_id + "/" + self.device_id + "_" + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".dat"
+                    with open(path, "w") as file:
+                        file.write(file_content + "\n")
+                        file.close()
 
             pass
         except Exception as e:
-            print(str(e))
+            err='on line {}'.format(sys.exc_info()[-1].tb_lineno), str(e)
+            print(err)
             pass
 
     # function for writing "reading" file
